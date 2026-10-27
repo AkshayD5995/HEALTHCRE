@@ -1,0 +1,188 @@
+{
+	"name": "pl_load_hospital_csv_to_sql",
+	"properties": {
+		"activities": [
+			{
+				"name": "lkp_config",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "SELECT ContainerName, FolderPath, FileName, DatabaseName, SchemaName, TableName\nFROM dbo.HospitalFileConfig\nWHERE IsActive = 1\n  AND HospitalName = '@{pipeline().parameters.hospitalName}'\nORDER BY LoadOrder",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "ds_sql_config",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "scr_clear_tables",
+				"type": "Script",
+				"dependsOn": [
+					{
+						"activity": "lkp_config",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "LS_sql",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"dbName": {
+							"value": "@activity('lkp_config').output.value[0].DatabaseName",
+							"type": "Expression"
+						}
+					}
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "NonQuery",
+							"text": {
+								"value": "DELETE FROM dbo.transactions;\nDELETE FROM dbo.encounters;\nDELETE FROM dbo.patients;\nDELETE FROM dbo.providers;\nDELETE FROM dbo.departments;",
+								"type": "Expression"
+							}
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			},
+			{
+				"name": "fe_files",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "scr_clear_tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('lkp_config').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "cp_csv_to_sql",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true,
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "insert",
+									"sqlWriterUseTableLock": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_adls_csv",
+									"type": "DatasetReference",
+									"parameters": {
+										"containerName": {
+											"value": "@item().ContainerName",
+											"type": "Expression"
+										},
+										"folderPath": {
+											"value": "@item().FolderPath",
+											"type": "Expression"
+										},
+										"fileName": {
+											"value": "@item().FileName",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_sql_table",
+									"type": "DatasetReference",
+									"parameters": {
+										"dbName": {
+											"value": "@item().DatabaseName",
+											"type": "Expression"
+										},
+										"tableName": {
+											"value": "@item().TableName",
+											"type": "Expression"
+										},
+										"schemaName": {
+											"value": "@item().SchemaName",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"hospitalName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-10-27T09:40:18Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

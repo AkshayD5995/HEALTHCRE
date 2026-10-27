@@ -1,0 +1,56 @@
+{
+	"name": "pl_load_all_hospitals",
+	"properties": {
+		"activities": [
+			{
+				"name": "fe_hospitals",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.hospitalName",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "exec_load_one_hospital",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_load_hospital_csv_to_sql",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"hospitalName": {
+										"value": "@item()",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"hospitalName": {
+				"type": "array",
+				"defaultValue": [
+					"HospA",
+					"HospB"
+				]
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-10-27T09:40:19Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

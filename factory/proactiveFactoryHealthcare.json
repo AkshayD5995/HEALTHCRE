@@ -1,0 +1,15 @@
+{
+	"name": "proactiveFactoryHealthcare",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "af542c32-d231-4129-8ae5-93cad78f5f28",
+		"tenantId": "28d29f66-c024-45c8-be72-66c9704679ef"
+	}
+}
