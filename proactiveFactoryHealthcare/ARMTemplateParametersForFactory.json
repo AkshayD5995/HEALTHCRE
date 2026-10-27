@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "proactiveFactoryHealthcare"
+		},
+		"LS_adls_accountKey": {
+			"value": ""
+		},
+		"LS_sql_password": {
+			"value": ""
+		},
+		"LS_adls_properties_typeProperties_url": {
+			"value": "https://projecthealthcare.dfs.core.windows.net/"
+		},
+		"LS_sql_properties_typeProperties_server": {
+			"value": "serverhealth.database.windows.net"
+		},
+		"LS_sql_properties_typeProperties_database": {
+			"value": "@{linkedService().dbName}"
+		},
+		"LS_sql_properties_typeProperties_userName": {
+			"value": "akshay"
+		}
+	}
+}
